@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { PublicController } from '../controllers/public.controller';
+
+const router = Router();
+const publicController = new PublicController();
+
+// No authentication required for these routes — they are customer-facing
+router.get('/:slug', (req, res) => publicController.getRestaurantMenu(req, res));
+router.post('/:slug/orders', (req, res) => publicController.placeOrder(req, res));
+
+export default router;
