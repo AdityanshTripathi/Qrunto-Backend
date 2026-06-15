@@ -11,6 +11,8 @@ import publicRouter from './routes/public.routes';
 import orderRouter from './routes/order.routes';
 import analyticsRouter from './routes/analytics.routes';
 import settingsRouter from './routes/settings.routes';
+import superadminRouter from './routes/superadmin.routes';
+
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -44,6 +46,9 @@ app.use('/api/analytics', analyticsRouter);
 
 // Settings routes
 app.use('/api/settings', settingsRouter);
+
+// Superadmin routes
+app.use('/api/superadmin', superadminRouter);
 
 // Public customer-facing routes (no auth)
 app.use('/api/public', publicRouter);

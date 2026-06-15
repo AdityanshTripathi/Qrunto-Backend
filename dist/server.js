@@ -16,6 +16,7 @@ const public_routes_1 = __importDefault(require("./routes/public.routes"));
 const order_routes_1 = __importDefault(require("./routes/order.routes"));
 const analytics_routes_1 = __importDefault(require("./routes/analytics.routes"));
 const settings_routes_1 = __importDefault(require("./routes/settings.routes"));
+const superadmin_routes_1 = __importDefault(require("./routes/superadmin.routes"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 5000;
 app.use((0, cors_1.default)());
@@ -38,6 +39,8 @@ app.use('/api/orders', order_routes_1.default);
 app.use('/api/analytics', analytics_routes_1.default);
 // Settings routes
 app.use('/api/settings', settings_routes_1.default);
+// Superadmin routes
+app.use('/api/superadmin', superadmin_routes_1.default);
 // Public customer-facing routes (no auth)
 app.use('/api/public', public_routes_1.default);
 // Health check endpoint

@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
 }
 
 model User {
@@ -60,6 +60,7 @@ model SubscriptionPlan {
   createdAt     DateTime       @default(now()) @map("created_at")
   updatedAt     DateTime       @updatedAt @map("updated_at")
   subscriptions Subscription[]
+  promoCodes    PromoCode[]
 
   @@map("subscription_plans")
 }
@@ -81,28 +82,34 @@ model Subscription {
 }
 
 model PromoCode {
-  id          String            @id @default(uuid())
-  code        String            @unique
-  type        PromoCodeType
-  value       Float
-  usageLimit  Int?              @map("usage_limit")
-  usageCount  Int               @default(0) @map("usage_count")
-  expiresAt   DateTime?         @map("expires_at")
-  isActive    Boolean           @default(true) @map("is_active")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-  redemptions PromoRedemption[]
+  id           String            @id @default(uuid())
+  code         String            @unique
+  type         PromoCodeType
+  value        Float
+  usageLimit   Int?              @default(1) @map("usage_limit")
+  usageCount   Int               @default(0) @map("usage_count")
+  expiresAt    DateTime?         @map("expires_at")
+  isActive     Boolean           @default(true) @map("is_active")
+  planId       String?           @map("plan_id")
+  durationDays Int?              @map("duration_days")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+  redemptions  PromoRedemption[]
+  plan         SubscriptionPlan? @relation(fields: [planId], references: [id], onDelete: Cascade)
 
+  @@index([planId])
   @@map("promo_codes")
 }
 
 model PromoRedemption {
-  id           String     @id @default(uuid())
-  promoCodeId  String     @map("promo_code_id")
-  restaurantId String     @map("restaurant_id")
-  redeemedAt   DateTime   @default(now()) @map("redeemed_at")
-  promoCode    PromoCode  @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
-  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  id                String     @id @default(uuid())
+  promoCodeId       String     @map("promo_code_id")
+  restaurantId      String     @map("restaurant_id")
+  redeemedAt        DateTime   @default(now()) @map("redeemed_at")
+  subscriptionStart DateTime?  @map("subscription_start")
+  subscriptionEnd   DateTime?  @map("subscription_end")
+  promoCode         PromoCode  @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  restaurant        Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@index([restaurantId])
   @@index([promoCodeId])
