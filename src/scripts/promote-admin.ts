@@ -1,6 +1,6 @@
+import 'dotenv/config';
 import { prisma } from '../lib/prisma';
 import { UserRole } from '@prisma/client';
-import 'dotenv/config';
 
 async function run() {
   const email = process.argv[2];
