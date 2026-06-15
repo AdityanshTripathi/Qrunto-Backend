@@ -11,7 +11,11 @@ export interface DecodedUser {
   restaurantId?: string;
 }
 
-export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
+export interface AuthenticatedRequest extends Request {
+  user?: DecodedUser;
+}
+
+export const authenticate = (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -36,7 +40,7 @@ export const authenticate = (req: Request, res: Response, next: NextFunction): v
 };
 
 export const requireRoles = (roles: UserRole[]) => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user) {
       res.status(401).json({ error: 'Authentication required' });
       return;
@@ -50,3 +54,9 @@ export const requireRoles = (roles: UserRole[]) => {
     next();
   };
 };
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: DecodedUser;
+  }
+}

@@ -6,7 +6,6 @@
     "target": "es2016",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "types": [],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
