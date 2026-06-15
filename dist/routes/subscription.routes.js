@@ -7,5 +7,6 @@ const router = (0, express_1.Router)();
 const subscriptionController = new subscription_controller_1.SubscriptionController();
 // Protected route to select plan and initiate subscription
 router.post('/', auth_middleware_1.authenticate, (req, res) => subscriptionController.createPendingSubscription(req, res));
+router.get('/current', auth_middleware_1.authenticate, (req, res) => subscriptionController.getActiveSubscription(req, res));
 exports.default = router;
 //# sourceMappingURL=subscription.routes.js.map

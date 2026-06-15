@@ -203,6 +203,145 @@ class PublicController {
             }
         });
     }
+    // ─── GET /api/public/:slug/orders/:orderId/status ─────────────────────────
+    getOrderStatus(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c, _d;
+            try {
+                const slug = req.params['slug'];
+                const orderId = req.params['orderId'];
+                if (!slug || !orderId) {
+                    res.status(400).json({ error: 'Restaurant slug and order ID are required' });
+                    return;
+                }
+                // Fetch restaurant
+                const restaurant = yield prisma_1.prisma.restaurant.findUnique({
+                    where: { slug },
+                });
+                if (!restaurant) {
+                    res.status(404).json({ error: 'Restaurant not found' });
+                    return;
+                }
+                // Fetch order details
+                const order = (yield prisma_1.prisma.order.findFirst({
+                    where: {
+                        id: orderId,
+                        restaurantId: restaurant.id,
+                    },
+                    include: {
+                        orderItems: true,
+                        table: true,
+                        payments: {
+                            orderBy: { createdAt: 'desc' },
+                            take: 1,
+                        },
+                    },
+                }));
+                if (!order) {
+                    res.status(404).json({ error: 'Order not found' });
+                    return;
+                }
+                res.status(200).json({
+                    order: {
+                        id: order.id,
+                        orderNumber: order.orderNumber,
+                        status: order.status,
+                        subtotal: order.subtotal,
+                        taxAmount: order.taxAmount,
+                        totalAmount: order.totalAmount,
+                        tableNumber: order.table.tableNumber,
+                        notes: order.notes,
+                        createdAt: order.createdAt,
+                        items: order.orderItems.map((item) => ({
+                            id: item.id,
+                            name: item.itemName,
+                            quantity: item.quantity,
+                            unitPrice: item.unitPrice,
+                            totalPrice: item.totalPrice,
+                        })),
+                        paymentStatus: (_b = (_a = order.payments[0]) === null || _a === void 0 ? void 0 : _a.status) !== null && _b !== void 0 ? _b : 'PENDING',
+                        paymentMethod: (_d = (_c = order.payments[0]) === null || _c === void 0 ? void 0 : _c.paymentMethod) !== null && _d !== void 0 ? _d : null,
+                    },
+                });
+            }
+            catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+    }
+    // ─── POST /api/public/:slug/orders/:orderId/pay-mock ────────────────────────
+    markOrderPaidMock(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const slug = req.params['slug'];
+                const orderId = req.params['orderId'];
+                const { paymentMethod } = req.body; // e.g., 'UPI', 'CARD'
+                if (!slug || !orderId) {
+                    res.status(400).json({ error: 'Restaurant slug and order ID are required' });
+                    return;
+                }
+                // Fetch restaurant
+                const restaurant = yield prisma_1.prisma.restaurant.findUnique({
+                    where: { slug },
+                });
+                if (!restaurant) {
+                    res.status(404).json({ error: 'Restaurant not found' });
+                    return;
+                }
+                // Fetch order
+                const order = yield prisma_1.prisma.order.findFirst({
+                    where: {
+                        id: orderId,
+                        restaurantId: restaurant.id,
+                    },
+                });
+                if (!order) {
+                    res.status(404).json({ error: 'Order not found' });
+                    return;
+                }
+                // Create Payment and Transaction inside a database transaction
+                const payment = yield prisma_1.prisma.$transaction((tx) => __awaiter(this, void 0, void 0, function* () {
+                    // Create Payment record
+                    const newPayment = yield tx.payment.create({
+                        data: {
+                            restaurantId: restaurant.id,
+                            orderId: order.id,
+                            amount: order.totalAmount,
+                            status: 'SUCCESS',
+                            paymentMethod: paymentMethod || 'ONLINE_DEMO',
+                            razorpayOrderId: `order_mock_${Math.random().toString(36).substring(2, 11)}`,
+                            razorpayPaymentId: `pay_mock_${Math.random().toString(36).substring(2, 11)}`,
+                            paidAt: new Date(),
+                        },
+                    });
+                    // Create Transaction record
+                    yield tx.transaction.create({
+                        data: {
+                            restaurantId: restaurant.id,
+                            paymentId: newPayment.id,
+                            amount: order.totalAmount,
+                            transactionType: 'INCOME',
+                            reference: `Razorpay Demo Ref: ${newPayment.razorpayPaymentId}`,
+                        },
+                    });
+                    return newPayment;
+                }));
+                res.status(200).json({
+                    message: 'Payment mock successful!',
+                    payment: {
+                        id: payment.id,
+                        amount: payment.amount,
+                        status: payment.status,
+                        paymentMethod: payment.paymentMethod,
+                        paidAt: payment.paidAt,
+                    },
+                });
+            }
+            catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+    }
 }
 exports.PublicController = PublicController;
 //# sourceMappingURL=public.controller.js.map

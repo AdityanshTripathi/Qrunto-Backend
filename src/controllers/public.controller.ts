@@ -219,4 +219,151 @@ export class PublicController {
       res.status(500).json({ error: err.message });
     }
   }
+
+  // ─── GET /api/public/:slug/orders/:orderId/status ─────────────────────────
+  async getOrderStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const slug = req.params['slug'] as string;
+      const orderId = req.params['orderId'] as string;
+      if (!slug || !orderId) {
+        res.status(400).json({ error: 'Restaurant slug and order ID are required' });
+        return;
+      }
+
+      // Fetch restaurant
+      const restaurant = await prisma.restaurant.findUnique({
+        where: { slug },
+      });
+      if (!restaurant) {
+        res.status(404).json({ error: 'Restaurant not found' });
+        return;
+      }
+
+      // Fetch order details
+      const order = (await prisma.order.findFirst({
+        where: {
+          id: orderId,
+          restaurantId: restaurant.id,
+        },
+        include: {
+          orderItems: true,
+          table: true,
+          payments: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
+      })) as any;
+
+      if (!order) {
+        res.status(404).json({ error: 'Order not found' });
+        return;
+      }
+
+      res.status(200).json({
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+          subtotal: order.subtotal,
+          taxAmount: order.taxAmount,
+          totalAmount: order.totalAmount,
+          tableNumber: order.table.tableNumber,
+          notes: order.notes,
+          createdAt: order.createdAt,
+          items: order.orderItems.map((item: any) => ({
+            id: item.id,
+            name: item.itemName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+          })),
+          paymentStatus: order.payments[0]?.status ?? 'PENDING',
+          paymentMethod: order.payments[0]?.paymentMethod ?? null,
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ─── POST /api/public/:slug/orders/:orderId/pay-mock ────────────────────────
+  async markOrderPaidMock(req: Request, res: Response): Promise<void> {
+    try {
+      const slug = req.params['slug'] as string;
+      const orderId = req.params['orderId'] as string;
+      const { paymentMethod } = req.body; // e.g., 'UPI', 'CARD'
+
+      if (!slug || !orderId) {
+        res.status(400).json({ error: 'Restaurant slug and order ID are required' });
+        return;
+      }
+
+      // Fetch restaurant
+      const restaurant = await prisma.restaurant.findUnique({
+        where: { slug },
+      });
+      if (!restaurant) {
+        res.status(404).json({ error: 'Restaurant not found' });
+        return;
+      }
+
+      // Fetch order
+      const order = await prisma.order.findFirst({
+        where: {
+          id: orderId,
+          restaurantId: restaurant.id,
+        },
+      });
+
+      if (!order) {
+        res.status(404).json({ error: 'Order not found' });
+        return;
+      }
+
+      // Create Payment and Transaction inside a database transaction
+      const payment = await prisma.$transaction(async (tx) => {
+        // Create Payment record
+        const newPayment = await tx.payment.create({
+          data: {
+            restaurantId: restaurant.id,
+            orderId: order.id,
+            amount: order.totalAmount,
+            status: 'SUCCESS',
+            paymentMethod: paymentMethod || 'ONLINE_DEMO',
+            razorpayOrderId: `order_mock_${Math.random().toString(36).substring(2, 11)}`,
+            razorpayPaymentId: `pay_mock_${Math.random().toString(36).substring(2, 11)}`,
+            paidAt: new Date(),
+          },
+        });
+
+        // Create Transaction record
+        await tx.transaction.create({
+          data: {
+            restaurantId: restaurant.id,
+            paymentId: newPayment.id,
+            amount: order.totalAmount,
+            transactionType: 'INCOME',
+            reference: `Razorpay Demo Ref: ${newPayment.razorpayPaymentId}`,
+          },
+        });
+
+        return newPayment;
+      });
+
+      res.status(200).json({
+        message: 'Payment mock successful!',
+        payment: {
+          id: payment.id,
+          amount: payment.amount,
+          status: payment.status,
+          paymentMethod: payment.paymentMethod,
+          paidAt: payment.paidAt,
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
+

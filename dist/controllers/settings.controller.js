@@ -20,6 +20,7 @@ const UpdateSettingsSchema = zod_1.z.object({
     email: zod_1.z.string().email('Invalid email address').nullable().optional(),
     address: zod_1.z.string().nullable().optional(),
     gstNumber: zod_1.z.string().nullable().optional(),
+    logoUrl: zod_1.z.string().nullable().optional(),
     // Restaurant Settings
     currency: zod_1.z.string().min(1, 'Currency is required').optional(),
     taxPercentage: zod_1.z.number().min(0, 'Tax percentage cannot be negative').max(100, 'Tax percentage cannot exceed 100').optional(),
@@ -111,6 +112,8 @@ class SettingsController {
                     restaurantFields.address = data.address;
                 if (data.gstNumber !== undefined)
                     restaurantFields.gstNumber = data.gstNumber;
+                if (data.logoUrl !== undefined)
+                    restaurantFields.logoUrl = data.logoUrl;
                 const settingsFields = {};
                 if (data.currency !== undefined)
                     settingsFields.currency = data.currency;

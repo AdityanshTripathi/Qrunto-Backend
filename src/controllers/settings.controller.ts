@@ -10,6 +10,7 @@ const UpdateSettingsSchema = z.object({
   email: z.string().email('Invalid email address').nullable().optional(),
   address: z.string().nullable().optional(),
   gstNumber: z.string().nullable().optional(),
+  logoUrl: z.string().nullable().optional(),
 
   // Restaurant Settings
   currency: z.string().min(1, 'Currency is required').optional(),
@@ -17,6 +18,7 @@ const UpdateSettingsSchema = z.object({
   businessHours: z.any().optional(),
   themeSettings: z.any().optional(),
 });
+
 
 export class SettingsController {
   // ─── GET /api/settings ──────────────────────────────────────────────────────
@@ -102,12 +104,14 @@ export class SettingsController {
       if (data.email !== undefined) restaurantFields.email = data.email;
       if (data.address !== undefined) restaurantFields.address = data.address;
       if (data.gstNumber !== undefined) restaurantFields.gstNumber = data.gstNumber;
+      if (data.logoUrl !== undefined) restaurantFields.logoUrl = data.logoUrl;
 
       const settingsFields: Record<string, any> = {};
       if (data.currency !== undefined) settingsFields.currency = data.currency;
       if (data.taxPercentage !== undefined) settingsFields.taxPercentage = data.taxPercentage;
       if (data.businessHours !== undefined) settingsFields.businessHours = data.businessHours;
       if (data.themeSettings !== undefined) settingsFields.themeSettings = data.themeSettings;
+
 
       // Perform transaction
       const updated = await prisma.$transaction(async (tx) => {

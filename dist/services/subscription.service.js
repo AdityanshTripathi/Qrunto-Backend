@@ -38,6 +38,11 @@ class SubscriptionService {
             });
         });
     }
+    getActiveSubscription(restaurantId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return subscriptionRepository.findActiveSubscriptionByRestaurantId(restaurantId);
+        });
+    }
 }
 exports.SubscriptionService = SubscriptionService;
 //# sourceMappingURL=subscription.service.js.map

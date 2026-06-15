@@ -45,6 +45,26 @@ class SubscriptionController {
             }
         });
     }
+    getActiveSubscription(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                if (!req.user) {
+                    res.status(401).json({ error: 'Authentication required' });
+                    return;
+                }
+                const restaurantId = req.user.restaurantId;
+                if (!restaurantId) {
+                    res.status(400).json({ error: 'No restaurant associated with this user session' });
+                    return;
+                }
+                const subscription = yield subscriptionService.getActiveSubscription(restaurantId);
+                res.status(200).json({ subscription });
+            }
+            catch (err) {
+                res.status(400).json({ error: err.message });
+            }
+        });
+    }
 }
 exports.SubscriptionController = SubscriptionController;
 //# sourceMappingURL=subscription.controller.js.map
