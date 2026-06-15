@@ -9,5 +9,8 @@ export declare class SuperAdminController {
     generateLicenseCode(req: Request, res: Response): Promise<void>;
     listLicenseCodes(req: Request, res: Response): Promise<void>;
     getTransactions(req: Request, res: Response): Promise<void>;
+    deleteRestaurant(req: Request, res: Response): Promise<void>;
+    deletePlan(req: Request, res: Response): Promise<void>;
+    deleteLicenseCode(req: Request, res: Response): Promise<void>;
 }
 //# sourceMappingURL=superadmin.controller.d.ts.map

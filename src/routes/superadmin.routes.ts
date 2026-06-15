@@ -16,14 +16,17 @@ router.get('/dashboard-stats', (req, res) => superAdminController.getDashboardSt
 router.get('/restaurants', (req, res) => superAdminController.getRestaurants(req, res));
 router.patch('/restaurants/:id/toggle-status', (req, res) => superAdminController.toggleRestaurantStatus(req, res));
 router.post('/restaurants/:id/login-as', (req, res) => superAdminController.generateLoginAsToken(req, res));
+router.delete('/restaurants/:id', (req, res) => superAdminController.deleteRestaurant(req, res));
 
 // Subscription plans CRUD
 router.post('/plans', (req, res) => superAdminController.createPlan(req, res));
 router.patch('/plans/:id', (req, res) => superAdminController.updatePlan(req, res));
+router.delete('/plans/:id', (req, res) => superAdminController.deletePlan(req, res));
 
 // License Activation Codes
 router.post('/license-codes', (req, res) => superAdminController.generateLicenseCode(req, res));
 router.get('/license-codes', (req, res) => superAdminController.listLicenseCodes(req, res));
+router.delete('/license-codes/:id', (req, res) => superAdminController.deleteLicenseCode(req, res));
 
 // Transactions Logs
 router.get('/transactions', (req, res) => superAdminController.getTransactions(req, res));

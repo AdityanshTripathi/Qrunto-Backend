@@ -360,4 +360,93 @@ export class SuperAdminController {
       res.status(500).json({ error: err.message });
     }
   }
+
+  // ─── DELETE /api/superadmin/restaurants/:id ──────────────────────────────
+  async deleteRestaurant(req: Request, res: Response): Promise<void> {
+    try {
+      const id = req.params['id'] as string;
+      const restaurant = await prisma.restaurant.findUnique({
+        where: { id },
+        include: { owner: true }
+      });
+
+      if (!restaurant) {
+        res.status(404).json({ error: 'Restaurant not found' });
+        return;
+      }
+
+      const ownerId = restaurant.ownerId;
+
+      // Delete the restaurant (cascading deletes categories, menu items, orders, tables, subscriptions, settings)
+      await prisma.restaurant.delete({
+        where: { id }
+      });
+
+      // If the owner has no other restaurants, delete the owner user account
+      if (ownerId) {
+        const otherRestCount = await prisma.restaurant.count({
+          where: { ownerId }
+        });
+        if (otherRestCount === 0) {
+          await prisma.user.delete({
+            where: { id: ownerId }
+          });
+        }
+      }
+
+      res.status(200).json({ message: `Restaurant ${restaurant.name} and its associated records have been deleted successfully!` });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ─── DELETE /api/superadmin/plans/:id ─────────────────────────────────────
+  async deletePlan(req: Request, res: Response): Promise<void> {
+    try {
+      const id = req.params['id'] as string;
+      const plan = await prisma.subscriptionPlan.findUnique({
+        where: { id }
+      });
+
+      if (!plan) {
+        res.status(404).json({ error: 'Subscription plan not found' });
+        return;
+      }
+
+      // Delete inside transaction to clean up referenced Subscriptions and PromoCodes
+      await prisma.$transaction([
+        prisma.subscription.deleteMany({ where: { planId: id } }),
+        prisma.promoCode.deleteMany({ where: { planId: id } }),
+        prisma.subscriptionPlan.delete({ where: { id } })
+      ]);
+
+      res.status(200).json({ message: `Subscription plan ${plan.name} deleted successfully!` });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
+
+  // ─── DELETE /api/superadmin/license-codes/:id ─────────────────────────────
+  async deleteLicenseCode(req: Request, res: Response): Promise<void> {
+    try {
+      const id = req.params['id'] as string;
+      const code = await prisma.promoCode.findUnique({
+        where: { id }
+      });
+
+      if (!code) {
+        res.status(404).json({ error: 'License code not found' });
+        return;
+      }
+
+      // Deleting a PromoCode cascades to PromoRedemptions
+      await prisma.promoCode.delete({
+        where: { id }
+      });
+
+      res.status(200).json({ message: `License code ${code.code} deleted successfully!` });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }

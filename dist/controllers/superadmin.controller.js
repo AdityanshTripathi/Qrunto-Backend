@@ -365,6 +365,90 @@ class SuperAdminController {
             }
         });
     }
+    // ─── DELETE /api/superadmin/restaurants/:id ──────────────────────────────
+    deleteRestaurant(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const id = req.params['id'];
+                const restaurant = yield prisma_1.prisma.restaurant.findUnique({
+                    where: { id },
+                    include: { owner: true }
+                });
+                if (!restaurant) {
+                    res.status(404).json({ error: 'Restaurant not found' });
+                    return;
+                }
+                const ownerId = restaurant.ownerId;
+                // Delete the restaurant (cascading deletes categories, menu items, orders, tables, subscriptions, settings)
+                yield prisma_1.prisma.restaurant.delete({
+                    where: { id }
+                });
+                // If the owner has no other restaurants, delete the owner user account
+                if (ownerId) {
+                    const otherRestCount = yield prisma_1.prisma.restaurant.count({
+                        where: { ownerId }
+                    });
+                    if (otherRestCount === 0) {
+                        yield prisma_1.prisma.user.delete({
+                            where: { id: ownerId }
+                        });
+                    }
+                }
+                res.status(200).json({ message: `Restaurant ${restaurant.name} and its associated records have been deleted successfully!` });
+            }
+            catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+    }
+    // ─── DELETE /api/superadmin/plans/:id ─────────────────────────────────────
+    deletePlan(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const id = req.params['id'];
+                const plan = yield prisma_1.prisma.subscriptionPlan.findUnique({
+                    where: { id }
+                });
+                if (!plan) {
+                    res.status(404).json({ error: 'Subscription plan not found' });
+                    return;
+                }
+                // Delete inside transaction to clean up referenced Subscriptions and PromoCodes
+                yield prisma_1.prisma.$transaction([
+                    prisma_1.prisma.subscription.deleteMany({ where: { planId: id } }),
+                    prisma_1.prisma.promoCode.deleteMany({ where: { planId: id } }),
+                    prisma_1.prisma.subscriptionPlan.delete({ where: { id } })
+                ]);
+                res.status(200).json({ message: `Subscription plan ${plan.name} deleted successfully!` });
+            }
+            catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+    }
+    // ─── DELETE /api/superadmin/license-codes/:id ─────────────────────────────
+    deleteLicenseCode(req, res) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const id = req.params['id'];
+                const code = yield prisma_1.prisma.promoCode.findUnique({
+                    where: { id }
+                });
+                if (!code) {
+                    res.status(404).json({ error: 'License code not found' });
+                    return;
+                }
+                // Deleting a PromoCode cascades to PromoRedemptions
+                yield prisma_1.prisma.promoCode.delete({
+                    where: { id }
+                });
+                res.status(200).json({ message: `License code ${code.code} deleted successfully!` });
+            }
+            catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+    }
 }
 exports.SuperAdminController = SuperAdminController;
 //# sourceMappingURL=superadmin.controller.js.map
