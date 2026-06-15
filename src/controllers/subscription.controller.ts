@@ -194,4 +194,78 @@ export class SubscriptionController {
       res.status(500).json({ error: err.message });
     }
   }
+
+  async purchaseSubscription(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+      }
+
+      const restaurantId = req.user.restaurantId;
+      if (!restaurantId) {
+        res.status(400).json({ error: 'No restaurant associated with this user session' });
+        return;
+      }
+
+      const { planId, paymentMethod } = req.body;
+      if (!planId) {
+        res.status(400).json({ error: 'Plan ID is required' });
+        return;
+      }
+
+      // Fetch the plan
+      const plan = await prisma.subscriptionPlan.findUnique({
+        where: { id: planId }
+      });
+
+      if (!plan || !plan.isActive) {
+        res.status(404).json({ error: 'Active subscription plan not found' });
+        return;
+      }
+
+      // Generate a clean code, e.g. QR-PLAN-XXXXXX
+      const rand = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const cleanPlanName = plan.name.replace(/\s+/g, '').toUpperCase().substring(0, 4);
+      const generatedCode = `QR-${cleanPlanName}-${rand}`;
+
+      // Run database transaction
+      const promoCode = await prisma.$transaction(async (tx) => {
+        // 1. Create a successful payment entry
+        await tx.payment.create({
+          data: {
+            restaurantId,
+            amount: plan.price,
+            status: 'SUCCESS',
+            paymentMethod: paymentMethod || 'ONLINE',
+            paidAt: new Date()
+          }
+        });
+
+        // 2. Create the license activation code
+        const code = await tx.promoCode.create({
+          data: {
+            code: generatedCode,
+            type: 'FREE_TRIAL',
+            value: 0,
+            planId: plan.id,
+            durationDays: plan.durationDays,
+            usageLimit: 1,
+            usageCount: 0,
+            isActive: true
+          }
+        });
+
+        return code;
+      });
+
+      res.status(201).json({
+        message: 'Payment processed and activation code generated successfully!',
+        code: promoCode.code,
+        planName: plan.name
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  }
 }
