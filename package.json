@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "postinstall": "prisma generate",
     "promote-admin": "ts-node src/scripts/promote-admin.ts",
+    "create-admin": "ts-node src/scripts/create-admin.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
