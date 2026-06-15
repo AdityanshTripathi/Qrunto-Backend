@@ -1,14 +1,9 @@
-import { UserRole } from '@prisma/client';
+import { DecodedUser } from '../middlewares/auth.middleware';
 
 declare global {
   namespace Express {
     interface Request {
-      user?: {
-        id: string;
-        email: string;
-        role: UserRole;
-        restaurantId?: string;
-      };
+      user?: DecodedUser;
     }
   }
 }
